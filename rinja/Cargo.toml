@@ -1,0 +1,51 @@
+[package]
+name = "rinja"
+version = "0.3.4"
+description = "Type-safe, compiled Jinja-like templates for Rust"
+documentation = "https://docs.rs/rinja"
+keywords = ["markup", "template", "jinja2", "html"]
+categories = ["template-engine"]
+homepage = "https://rinja.readthedocs.io/"
+repository = "https://github.com/rinja-rs/rinja"
+license = "MIT OR Apache-2.0"
+workspace = ".."
+readme = "../README.md"
+edition = "2021"
+rust-version = "1.71"
+
+[package.metadata.docs.rs]
+features = ["default", "serde_json"]
+rustdoc-args = ["--generate-link-to-definition", "--cfg=docsrs"]
+
+[badges]
+maintenance = { status = "actively-developed" }
+
+[features]
+default = ["config", "humansize", "num-traits", "urlencode"]
+code-in-doc = ["rinja_derive/code-in-doc"]
+config = ["rinja_derive/config"]
+humansize = ["rinja_derive/humansize", "dep:humansize"]
+num-traits = ["rinja_derive/num-traits", "dep:num-traits"]
+serde_json = ["rinja_derive/serde_json", "dep:serde", "dep:serde_json"]
+urlencode = ["rinja_derive/urlencode", "dep:percent-encoding"]
+
+# Please do not depend on the following features manually.
+# Depend on the relevant integration crate instead!
+with-actix-web = ["rinja_derive/with-actix-web"]
+with-axum = ["rinja_derive/with-axum"]
+with-rocket = ["rinja_derive/with-rocket"]
+with-warp = ["rinja_derive/with-warp"]
+
+[dependencies]
+
+[dev-dependencies]
+criterion = "0.5"
+
+[[bench]]
+name = "to-json"
+harness = false
+required-features = ["serde_json"]
+
+[[bench]]
+name = "escape"
+harness = false

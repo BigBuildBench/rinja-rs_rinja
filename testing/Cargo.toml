@@ -1,0 +1,30 @@
+[package]
+name = "rinja_testing"
+version = "0.3.4"
+authors = ["rinja-rs developers"]
+workspace = ".."
+edition = "2021"
+rust-version = "1.71"
+publish = false
+
+[features]
+default = ["code-in-doc", "serde_json"]
+code-in-doc = ["rinja/code-in-doc"]
+serde_json = ["dep:serde_json", "rinja/serde_json"]
+
+[dependencies]
+
+[dev-dependencies]
+rinja = { path = "../rinja", version = "0.3.4", features = ["code-in-doc", "serde_json"] }
+
+criterion = "0.5"
+phf = { version = "0.11", features = ["macros" ] }
+trybuild = "1.0.76"
+
+[[bench]]
+name = "all"
+harness = false
+
+[[bench]]
+name = "normalize_identifier"
+harness = false

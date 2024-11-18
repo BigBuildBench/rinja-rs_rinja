@@ -1,0 +1,42 @@
+[package]
+name = "rinja_derive"
+version = "0.3.4"
+description = "Procedural macro package for Rinja"
+homepage = "https://github.com/rinja-rs/rinja"
+repository = "https://github.com/rinja-rs/rinja"
+license = "MIT OR Apache-2.0"
+workspace = ".."
+readme = "README.md"
+edition = "2021"
+rust-version = "1.71"
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--generate-link-to-definition", "--cfg=docsrs"]
+
+[lib]
+proc-macro = true
+
+[features]
+code-in-doc = ["dep:pulldown-cmark"]
+config = ["dep:serde", "dep:basic-toml", "parser/config"]
+humansize = []
+urlencode = []
+serde_json = []
+num-traits = []
+with-actix-web = []
+with-axum = []
+with-rocket = []
+with-warp = []
+
+[dependencies]
+
+[dev-dependencies]
+console = "0.15.8"
+prettyplease = "0.2.20"
+similar = "2.6.0"
+syn = { version = "2.0.3", features = ["full"] }
+
+[lints.rust]
+# Used in `rinja_derive_standalone` which uses the same source folder, but is not a proc-macro.
+unexpected_cfgs = { level = "allow", check-cfg = ['cfg(feature, values("__standalone"))'] }

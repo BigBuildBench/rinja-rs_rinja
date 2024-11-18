@@ -1,0 +1,187 @@
+name: CI
+
+on:
+  push:
+    branches: ['master']
+  pull_request:
+  schedule:
+    - cron: "32 4 * * 5"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  Test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        rust: [stable, beta]
+        exclude:
+          - os: macos-latest
+            rust: beta
+          - os: windows-latest
+            rust: beta
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust }}
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-nextest
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo build --all-targets
+      - run: cargo nextest run
+
+  Package:
+    strategy:
+      matrix:
+        package: [
+          rinja, rinja_actix, rinja_axum, rinja_derive, rinja_derive_standalone,
+          rinja_parser, rinja_rocket, rinja_warp, testing, examples/actix-web-app,
+          fuzzing
+        ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-nextest
+      - uses: Swatinem/rust-cache@v2
+      - run: cd ${{ matrix.package }} && cargo nextest run
+      - run: cd ${{ matrix.package }} && cargo clippy --all-targets -- -D warnings
+
+  Docs:
+    strategy:
+      matrix:
+        package: [
+          rinja, rinja_actix, rinja_axum, rinja_derive,
+          rinja_parser, rinja_rocket, rinja_warp,
+        ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+      - uses: Swatinem/rust-cache@v2
+      - run: cd ${{ matrix.package }} && cargo doc --all-features --no-deps
+        env:
+          RUSTDOCFLAGS: -Z unstable-options --generate-link-to-definition --cfg=docsrs -D warnings
+
+  Rustfmt:
+    runs-on: ubuntu-latest
+    steps:
+      # No need to test `rinja_derive_standalone`. It has same the `src` folder as `rinja_derive`.
+      # No need to run the checks in parallel. They are fast enough.
+      # No need for caching. No code is compiled at all.
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rustfmt
+      - run: |
+          set -eu
+          for PKG in \
+            rinja rinja_actix rinja_axum rinja_derive rinja_derive_standalone \
+            rinja_parser rinja_rocket rinja_warp testing examples/actix-web-app \
+            fuzzing
+          do
+            cd "$PKG"
+            echo "Testing: $PKG"
+            cargo fmt -- --check
+            cd - > /dev/null
+          done
+
+  MSRV:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: "1.71.1"
+      - run: cargo check --lib -p rinja --all-features
+
+  Audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: EmbarkStudios/cargo-deny-action@v2
+
+  Book:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: mdbook
+      - run: mdbook build book
+
+  DevSkim:
+    name: DevSkim
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run DevSkim scanner
+        uses: microsoft/DevSkim-Action@v1
+
+      - name: Upload DevSkim scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: devskim-results.sarif
+
+  CargoSort:
+    name: Check order in Cargo.toml
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-sort
+      - run: |
+          set -eu
+          for PKG in \
+            rinja rinja_actix rinja_axum rinja_derive rinja_derive_standalone \
+            rinja_parser rinja_rocket rinja_warp testing
+          do
+            cd "$PKG"
+            cargo sort --check --check-format --grouped
+            cd - > /dev/null
+          done
+
+  Fuzz:
+    strategy:
+      matrix:
+        fuzz_target:
+          - all
+          - filters
+          - html
+          - parser
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly
+          components: rust-src
+      - run: curl --location --silent --show-error --fail https://github.com/cargo-bins/cargo-quickinstall/releases/download/cargo-fuzz-0.12.0/cargo-fuzz-0.12.0-x86_64-unknown-linux-gnu.tar.gz | tar -xzvvf - -C $HOME/.cargo/bin
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fuzz run ${{ matrix.fuzz_target }} --jobs 4 -- -max_total_time=90
+        working-directory: fuzzing
+        env:
+          RUSTFLAGS: '-Ctarget-feature=-crt-static'
+
+  Typos:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: crate-ci/typos@master

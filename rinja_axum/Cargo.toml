@@ -1,0 +1,37 @@
+[workspace]
+members = ["."]
+
+[package]
+name = "rinja_axum"
+version = "0.3.4"
+edition = "2021"
+rust-version = "1.71"
+description = "Axum integration for Rinja templates"
+keywords = ["markup", "template", "jinja2", "html", "axum"]
+categories = ["template-engine"]
+homepage = "https://github.com/rinja-rs/rinja"
+repository = "https://github.com/rinja-rs/rinja"
+documentation = "https://docs.rs/rinja"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--generate-link-to-definition", "--cfg=docsrs"]
+
+[features]
+default = ["rinja/default"]
+code-in-doc = ["rinja/code-in-doc"]
+config = ["rinja/config"]
+humansize = ["rinja/humansize"]
+num-traits = ["rinja/num-traits"]
+serde_json = ["rinja/serde_json"]
+urlencode = ["rinja/urlencode"]
+
+[dependencies]
+
+[dev-dependencies]
+axum = { version = "0.7", default-features = false }
+http-body-util = "0.1"
+tokio = { version = "1.0", features = ["macros", "rt"] }
+tower = { version = "0.5", features = ["util"] }

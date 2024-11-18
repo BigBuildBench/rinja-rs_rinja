@@ -1,0 +1,36 @@
+[workspace]
+members = ["."]
+
+[package]
+name = "rinja_actix"
+version = "0.3.4"
+description = "Actix-Web integration for Rinja templates"
+documentation = "https://docs.rs/rinja"
+keywords = ["markup", "template", "jinja2", "html"]
+categories = ["template-engine"]
+homepage = "https://github.com/rinja-rs/rinja"
+repository = "https://github.com/rinja-rs/rinja"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+edition = "2021"
+rust-version = "1.71"
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--generate-link-to-definition", "--cfg=docsrs"]
+
+[features]
+default = ["rinja/default"]
+code-in-doc = ["rinja/code-in-doc"]
+config = ["rinja/config"]
+humansize = ["rinja/humansize"]
+num-traits = ["rinja/num-traits"]
+serde_json = ["rinja/serde_json"]
+urlencode = ["rinja/urlencode"]
+
+[dependencies]
+
+[dev-dependencies]
+actix-rt = { version = "2", default-features = false }
+actix-test = "0.1"
+bytes = { version = "1" }
